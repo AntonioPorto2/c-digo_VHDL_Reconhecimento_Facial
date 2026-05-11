@@ -1,0 +1,101 @@
+entity reconhecimento_facial is
+    Port (
+        clk          : in  STD_LOGIC;
+        reset        : in  STD_LOGIC;
+        face_valid   : in  STD_LOGIC;
+        face_id      : inlibrary IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+  STD_LOGIC_VECTOR(7 downto 0);
+
+        face_ok      : out STD_LOGIC;
+        face_error   : out STD_LOGIC;
+        processando  : out STD_LOGIC
+    );
+end reconhecimento_facial;
+
+architecture Behavioral of reconhecimento_facial is
+
+    type estado_tipo is (IDLE, CAPTURA, VERIFICA, LIBERA);
+    signal estado : estado_tipo;
+
+    constant usuario_autorizado :
+    STD_LOGIC_VECTOR(7 downto 0) := "10101010";
+
+begin
+
+process(clk, reset)
+
+begin
+
+    if reset = '1' then
+        estado <= IDLE;
+
+    elsif rising_edge(clk) then
+
+        case estado is
+
+            when IDLE =>
+
+                if face_valid = '1' then
+                    estado <= CAPTURA;
+                end if;
+
+            when CAPTURA =>
+
+                estado <= VERIFICA;
+
+            when VERIFICA =>
+
+                if face_id = usuario_autorizado then
+                    estado <= LIBERA;
+                else
+                    estado <= IDLE;
+                end if;
+
+            when LIBERA =>
+
+                estado <= IDLE;
+
+        end case;
+
+    end if;
+
+end process;
+
+process(estado, face_id)
+
+begin
+
+    face_ok <= '0';
+    face_error <= '0';
+    processando <= '0';
+
+    case estado is
+
+        when IDLE =>
+
+            null;
+
+        when CAPTURA =>
+
+            processando <= '1';
+
+        when VERIFICA =>
+
+            processando <= '1';
+
+            if face_id /= usuario_autorizado then
+                face_error <= '1';
+            end if;
+
+        when LIBERA =>
+
+            face_ok <= '1';
+
+    end case;
+
+end process;
+
+end Behavioral;
