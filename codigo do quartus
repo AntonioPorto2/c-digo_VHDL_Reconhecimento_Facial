@@ -1,0 +1,121 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity reconhecimento_facial is
+    Port (
+        clk           : in  STD_LOGIC;
+        reset         : in  STD_LOGIC;
+        face_valid    : in  STD_LOGIC;
+        face_id       : in  STD_LOGIC_VECTOR(7 downto 0);
+
+        face_ok       : out STD_LOGIC;
+        face_error    : out STD_LOGIC;
+        processando   : out STD_LOGIC
+    );
+end reconhecimento_facial;
+
+architecture Behavioral of reconhecimento_facial is
+
+    -- Definição dos estados da FSM
+    type estado_tipo is (
+        IDLE,
+        CAPTURA,
+        VALIDACAO,
+        LIBERADO,
+        NEGADO
+    );
+
+    signal estado_atual, proximo_estado : estado_tipo;
+
+    -- Usuário autorizado
+    constant usuario_autorizado :
+    STD_LOGIC_VECTOR(7 downto 0) := "10101010";
+
+begin
+
+    ----------------------------------------------------------------
+    -- PROCESSO SEQUENCIAL
+    -- Controle de troca de estados
+    ----------------------------------------------------------------
+    process(clk, reset)
+    begin
+
+        if reset = '1' then
+            estado_atual <= IDLE;
+
+        elsif rising_edge(clk) then
+            estado_atual <= proximo_estado;
+
+        end if;
+
+    end process;
+
+    ----------------------------------------------------------------
+    -- PROCESSO COMBINACIONAL
+    -- Lógica da FSM
+    ----------------------------------------------------------------
+    process(
+        estado_atual,
+        face_valid,
+        face_id
+    )
+
+    begin
+
+        -- Valores padrão
+        face_ok <= '0';
+        face_error <= '0';
+        processando <= '0';
+
+        proximo_estado <= estado_atual;
+
+        case estado_atual is
+
+            --------------------------------------------------------
+            when IDLE =>
+
+                if face_valid = '1' then
+                    proximo_estado <= CAPTURA;
+                end if;
+
+            --------------------------------------------------------
+            when CAPTURA =>
+
+                processando <= '1';
+
+                proximo_estado <= VALIDACAO;
+
+            --------------------------------------------------------
+            when VALIDACAO =>
+
+                processando <= '1';
+
+                if face_id = usuario_autorizado then
+                    proximo_estado <= LIBERADO;
+                else
+                    proximo_estado <= NEGADO;
+                end if;
+
+            --------------------------------------------------------
+            when LIBERADO =>
+
+                face_ok <= '1';
+
+                proximo_estado <= IDLE;
+
+            --------------------------------------------------------
+            when NEGADO =>
+
+                face_error <= '1';
+
+                proximo_estado <= IDLE;
+
+        end case;
+
+    end process;
+
+end Behavioral;
+
+
+
